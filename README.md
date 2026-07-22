@@ -1,5 +1,7 @@
 # Order & Inventory Microservices
 
+![CI](https://github.com/uttamchandak-dev/order-inventory-microservices/actions/workflows/ci.yml/badge.svg)
+
 Two independent Node.js services — **orders-service** and **inventory-service** — each with its own MySQL database, communicating over REST. Demonstrates a microservices architecture with a saga-style compensating transaction: if an order can't be fully fulfilled, any stock already reserved for it is automatically released.
 
 ## Architecture
@@ -107,6 +109,19 @@ curl -s -X POST http://localhost:4002/orders \
 # SKU-WIDGET-1 stock is unchanged — the 1-unit reservation was rolled back
 curl -s http://localhost:4001/products
 ```
+
+## Testing
+
+Both services have a black-box integration test suite that runs against the live stack:
+
+```bash
+docker compose up -d --build
+
+cd inventory-service && npm install && npm test && cd ..
+cd orders-service && npm install && npm test && cd ..
+```
+
+The `orders-service` suite specifically verifies the compensation path (a multi-item order that partially reserves stock before failing releases everything it already reserved). CI runs the same suite on every push via GitHub Actions.
 
 ## Design Notes
 
