@@ -1,0 +1,16 @@
+{
+  "name": "inventory-service",
+  "version": "1.0.0",
+  "description": "Inventory microservice: product catalog and stock reservation.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "migrate": "node src/config/migrate.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "mysql2": "^3.11.0"
+  }
+}

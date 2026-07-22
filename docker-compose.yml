@@ -1,0 +1,71 @@
+services:
+  inventory-db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_pass
+      MYSQL_DATABASE: inventory_db
+      MYSQL_USER: inventory_user
+      MYSQL_PASSWORD: inventory_pass
+    volumes:
+      - inventory_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_pass"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  orders-db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_pass
+      MYSQL_DATABASE: orders_db
+      MYSQL_USER: orders_user
+      MYSQL_PASSWORD: orders_pass
+    volumes:
+      - orders_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_pass"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  inventory-service:
+    build: ./inventory-service
+    restart: unless-stopped
+    environment:
+      PORT: 4001
+      DB_HOST: inventory-db
+      DB_PORT: 3306
+      DB_USER: inventory_user
+      DB_PASSWORD: inventory_pass
+      DB_NAME: inventory_db
+    ports:
+      - "4001:4001"
+    depends_on:
+      inventory-db:
+        condition: service_healthy
+
+  orders-service:
+    build: ./orders-service
+    restart: unless-stopped
+    environment:
+      PORT: 4002
+      DB_HOST: orders-db
+      DB_PORT: 3306
+      DB_USER: orders_user
+      DB_PASSWORD: orders_pass
+      DB_NAME: orders_db
+      INVENTORY_SERVICE_URL: http://inventory-service:4001
+    ports:
+      - "4002:4002"
+    depends_on:
+      orders-db:
+        condition: service_healthy
+      inventory-service:
+        condition: service_started
+
+volumes:
+  inventory_data:
+  orders_data:
