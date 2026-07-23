@@ -35,6 +35,7 @@ services:
     build: ./inventory-service
     restart: unless-stopped
     environment:
+      NODE_ENV: production
       PORT: 4001
       DB_HOST: inventory-db
       DB_PORT: 3306
@@ -51,6 +52,7 @@ services:
     build: ./orders-service
     restart: unless-stopped
     environment:
+      NODE_ENV: production
       PORT: 4002
       DB_HOST: orders-db
       DB_PORT: 3306

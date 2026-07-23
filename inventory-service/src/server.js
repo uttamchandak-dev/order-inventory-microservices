@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const pool = require("./config/db");
 const app = require("./app");
+const logger = require("./config/logger");
 
 const PORT = process.env.PORT || 4001;
 
@@ -27,19 +28,39 @@ async function ensureSchema() {
   }
 }
 
+let server;
+
 async function start(retries = 15) {
   try {
     await ensureSchema();
   } catch (err) {
     if (retries > 0) {
-      console.log("Waiting for database...", err.message);
+      logger.info(`Waiting for database... (${err.message})`);
       setTimeout(() => start(retries - 1), 2000);
       return;
     }
     throw err;
   }
 
-  app.listen(PORT, () => console.log(`inventory-service listening on port ${PORT}`));
+  server = app.listen(PORT, () => logger.info(`inventory-service listening on port ${PORT}`));
 }
+
+async function shutdown(signal) {
+  logger.info(`${signal} received, shutting down gracefully`);
+  if (server) {
+    server.close(async () => {
+      await pool.end();
+      logger.info("Shutdown complete");
+      process.exit(0);
+    });
+  } else {
+    await pool.end();
+    process.exit(0);
+  }
+  setTimeout(() => process.exit(1), 10_000).unref();
+}
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
 
 start();

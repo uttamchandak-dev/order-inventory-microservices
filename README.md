@@ -123,6 +123,14 @@ cd orders-service && npm install && npm test && cd ..
 
 The `orders-service` suite specifically verifies the compensation path (a multi-item order that partially reserves stock before failing releases everything it already reserved). CI runs the same suite on every push via GitHub Actions.
 
+## Production Hardening
+
+Both services include:
+
+- **Structured logging** via `pino`/`pino-http` — JSON logs per request in production, pretty-printed locally.
+- **Security headers** via `helmet` on every response.
+- **Graceful shutdown** — `SIGTERM`/`SIGINT` stop accepting new connections, let in-flight requests finish, close the MySQL pool, then exit (10s hard-exit fallback). Docker sends `SIGTERM` on `docker compose stop`, so this matters for zero-downtime redeploys.
+
 ## Design Notes
 
 - No message queue / event bus is used — service-to-service calls are synchronous REST for simplicity. A production version handling higher throughput would likely move reservation to an async event-driven saga (e.g. via a queue) to avoid holding an HTTP connection open across the whole flow.
