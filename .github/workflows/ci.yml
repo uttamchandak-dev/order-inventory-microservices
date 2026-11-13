@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start stack
+        run: docker compose up -d --build
+
+      - name: Wait for services to be healthy
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:4001/health && curl -sf http://localhost:4002/health; then
+              echo "Services are up"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Services did not become healthy in time"
+          docker compose logs
+          exit 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Test inventory-service
+        working-directory: inventory-service
+        run: npm ci && npm test
+
+      - name: Test orders-service
+        working-directory: orders-service
+        run: npm ci && npm test
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
